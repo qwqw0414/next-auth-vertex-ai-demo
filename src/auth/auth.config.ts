@@ -1,6 +1,7 @@
 import { NextAuthConfig, Session } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import GoogleProvider from 'next-auth/providers/google'
+import { refreshAccessToken } from "./refreshAccessToken";
 
 interface SessionWithTokens extends Session {
   accessToken?: string;
@@ -42,8 +43,16 @@ const authConfig = {
         token.refreshToken = account.refresh_token;
         token.expiresAt = account.expires_at;
       }
-      // console.log("jwt token", token);
-      return token as ExtendedJWT;
+
+      // 액세스 토큰 만료 시간이 자났으면 갱신
+      if (token?.expiresAt && Date.now() > Number(token.expiresAt)) {
+        console.log("refresh token");
+        return refreshAccessToken(token);
+      } else {
+        // console.log("jwt token", token);
+        return token as ExtendedJWT;
+      }
+
     },
     async session({ session, token }) {
       // console.log("session before", session);
